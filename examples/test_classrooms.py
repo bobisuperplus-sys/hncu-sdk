@@ -18,14 +18,15 @@ def main():
 
     client = get_authenticated_client(auto_sso=True)
 
-    query_year = 2026
-    query_term = Term.FIRST
+    query_year = int(os.getenv("HNCU_YEAR", "2024"))
+    query_term = 1  # 传入直观学期数字 1 (第 1 学期 / 上学期)，SDK 自动映射为教务代码 3
     week = 1
     day_of_week = 1
     s_start = 1
     s_end = 2
 
-    cond = f"{query_year}学年 第{query_term.value}学期 第{week}周 星期{day_of_week} 第{s_start}-{s_end}节"
+    term_name = Term.get_display_name(query_term)
+    cond = f"{query_year}学年 {term_name} 第{week}周 星期{day_of_week} 第{s_start}-{s_end}节"
     scramble_reveal(f"查询条件: {cond}", prefix="  🏫 ", duration=0.2, color=COLOR_YELLOW)
 
     classrooms = client.get_empty_classrooms(

@@ -19,8 +19,10 @@ def main():
     client = get_authenticated_client(auto_sso=True)
 
     query_year = os.getenv("HNCU_YEAR", "2023")
-    scramble_reveal(f"正在查询 {query_year} 学年第 1 学期完整课表...", prefix="  📅 ", duration=0.25, color=COLOR_YELLOW)
-    courses = client.get_schedule(year=query_year, term=Term.FIRST)
+    query_term = int(os.getenv("HNCU_TERM", "1"))  # 支持传入 1 (上学期/3) 或 2 (下学期/12)
+    term_display = Term.get_display_name(query_term)
+    scramble_reveal(f"正在查询 {query_year} 学年{term_display}完整课表...", prefix="  📅 ", duration=0.25, color=COLOR_YELLOW)
+    courses = client.get_schedule(year=query_year, term=query_term)
 
     scramble_reveal(f"查询成功！共检索到 {len(courses)} 门课程排期：", prefix="  ✅ ", duration=0.2, color=COLOR_GREEN)
     print()

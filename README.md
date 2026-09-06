@@ -8,6 +8,16 @@
 
 ---
 
+## 🖥️ 终端效果演示 (Terminal Demo)
+
+> 💡 **Anime.js `scrambleText` 风格赛博解码动效**：测试单元内置现代化终端字符随机乱码渐变解码流，全自动化双层认证与教务日程查询行云流水：
+
+<p align="center">
+  <img src="assets/demo.gif" alt="HNCU SDK 终端字符解码与考试日程查询演示" width="880">
+</p>
+
+---
+
 ## ✨ 核心特性
 
 1. **统一双层认证体系**：
@@ -64,17 +74,18 @@ print(f"欢迎你，{profile.user_name} 同学！")
 print(f"所属学院: {profile.department} | 班级: {profile.class_name}")
 
 # 2. 查询成绩 (默认查询全部，也可指定年份和学期)
-# year=2023, term=Term.FIRST 为 2023 学年第 1 学期
-grades = client.get_grades(year=2023, term=Term.FIRST)
+# 学期支持传入直觉数字: 1 (第1学期), 2 (第2学期), 3 (第3学期/暑假实习)，或使用 Term 枚举
+grades = client.get_grades(year=2023, term=1)
 
 for g in grades:
-    print(f"【{g.course_name}】 成绩: {g.score} | 绩点: {g.grade_point} | 学分: {g.credit} | 性质: {g.course_nature}")
+    print(f"【{g.course_name}】({g.term_display}) 成绩: {g.score} | 绩点: {g.grade_point} | 学分: {g.credit}")
 ```
 
 ### 2. 获取个人课表
 
 ```python
-courses = client.get_schedule(year=2023, term=Term.FIRST)
+# 查询 2023 学年第 1 学期课表 (传 1 或 Term.FIRST 均可，底层自动映射教务系统代码)
+courses = client.get_schedule(year=2023, term=1)
 for c in courses:
     print(f"星期{c.day_of_week} {c.section_display} - {c.course_name} ({c.classroom}, 教师: {c.teacher})")
 ```
@@ -99,10 +110,10 @@ print(f"学院: {detail.department} | 专业: {detail.major} | 学制: {detail.s
 ### 5. 检索空闲教室 (正方教务)
 
 ```python
-# 查询 2026 学年第 1 学期，第 1 周星期一，第 1-2 节的空闲教室
+# 查询 2024 学年第 1 学期，第 1 周星期一，第 1-2 节的空闲教室
 classrooms = client.get_empty_classrooms(
-    year=2026,
-    term=Term.FIRST,
+    year=2024,
+    term=1,
     week=1,
     day_of_week=1,
     section_start=1,

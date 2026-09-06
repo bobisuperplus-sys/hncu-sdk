@@ -69,7 +69,7 @@ class ClassroomService:
         for s in range(max(1, section_start), max(section_start, section_end) + 1):
             jcd_val |= (1 << (s - 1))
 
-        term_val = term.value if isinstance(term, Term) else str(term)
+        term_val = Term.normalize(term)
         post_data = {
             "xqh_id": campus_id,
             "xnm": str(year),

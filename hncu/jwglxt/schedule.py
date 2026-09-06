@@ -36,7 +36,7 @@ class ScheduleService:
         self.auth.ensure_sso()
         url = f"{BASE_URL_JWGLXT}/jwglxt/kbcx/xskbcx_cxXsgrkb.html?gnmkdm=N2151"
 
-        term_val = term.value if isinstance(term, Term) else str(term)
+        term_val = Term.normalize(term)
         post_data = {
             "xnm": str(year),
             "xqm": term_val,

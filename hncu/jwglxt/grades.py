@@ -43,12 +43,12 @@ class GradesService:
 
         url = f"{BASE_URL_JWGLXT}/jwglxt/cjcx/cjcx_cxDgXscj.html?doType=query&gnmkdm=N305005"
 
-        term_val = term.value if isinstance(term, Term) else str(term)
+        term_val = Term.normalize(term)
         user_id = self.auth.profile.user_id if self.auth.profile else ""
         post_data = {
             "xh_id": user_id,
             "xnm": str(year) if year else "",
-            "xqm": term_val if term_val else "",
+            "xqm": term_val,
             "_search": "false",
             "nd": str(int(time.time() * 1000)),
             "queryModel.showCount": "100",

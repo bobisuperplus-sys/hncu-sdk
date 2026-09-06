@@ -26,8 +26,8 @@ def get_authenticated_client(auto_sso: bool = True) -> HncuClient:
             _CACHED_CLIENT.sso_connect()
         return _CACHED_CLIENT
 
-    user_id = os.getenv("HNCU_USER")
-    password = os.getenv("HNCU_PASS")
+    user_id = os.getenv("HNCU_USER") or os.getenv("HNCU_USER_ID")
+    password = os.getenv("HNCU_PASS") or os.getenv("HNCU_PASSWORD")
 
     if not user_id:
         if sys.stdin.isatty():

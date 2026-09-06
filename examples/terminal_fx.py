@@ -9,6 +9,7 @@
 import sys
 import time
 import random
+import unicodedata
 from typing import Optional
 
 # ANSI 终端颜色代码
@@ -93,13 +94,16 @@ def scramble_reveal(
             char = target_text[i]
             if char.isspace():
                 scrambled_chars.append(char)
+            elif unicodedata.east_asian_width(char) in ("F", "W"):
+                # 宽字符使用双乱码字符保持相同终端显示列宽，消除晃动
+                scrambled_chars.append(random.choice(SCRAMBLE_CHARS) + random.choice(SCRAMBLE_CHARS))
             else:
                 scrambled_chars.append(random.choice(SCRAMBLE_CHARS))
         scrambled_part = "".join(scrambled_chars)
 
-        # 终端回车刷新当前行
+        # 终端回车刷新当前行 (\033[K 清除行末残影)
         output = (
-            f"\r{prefix}"
+            f"\r\033[K{prefix}"
             f"{final_color}{COLOR_BOLD}{revealed_part}{COLOR_RESET}"
             f"{color}{scrambled_part}{COLOR_RESET}"
         )
@@ -108,8 +112,8 @@ def scramble_reveal(
         if step < steps:
             time.sleep(sleep_per_frame)
 
-    # 最终完整字符呈现
-    sys.stdout.write(f"\r{prefix}{final_color}{target_text}{COLOR_RESET}")
+    # 最终完整字符呈现 (\033[K 清除残影)
+    sys.stdout.write(f"\r\033[K{prefix}{final_color}{target_text}{COLOR_RESET}")
     if end_newline:
         sys.stdout.write("\n")
     sys.stdout.flush()
@@ -172,3 +176,29 @@ def print_status_item(label: str, value: str, icon: str = "•"):
         color=COLOR_YELLOW,
         final_color=COLOR_WHITE,
     )
+
+
+def get_display_width(s: str) -> int:
+    """计算字符串在终端中的实际显示列宽（适配东亚中文字符）"""
+    import unicodedata
+    width = 0
+    for ch in str(s):
+        if unicodedata.east_asian_width(ch) in ("F", "W"):
+            width += 2
+        else:
+            width += 1
+    return width
+
+
+def pad_display(s: str, width: int, align: str = "<") -> str:
+    """按终端实际列宽进行智能填充对齐"""
+    text = str(s)
+    cur_w = get_display_width(text)
+    pad = max(0, width - cur_w)
+    if align == ">":
+        return " " * pad + text
+    elif align == "^":
+        pad_l = pad // 2
+        pad_r = pad - pad_l
+        return " " * pad_l + text + " " * pad_r
+    return text + " " * pad

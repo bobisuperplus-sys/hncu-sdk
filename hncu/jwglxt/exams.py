@@ -37,14 +37,38 @@ class ExamsService:
         """
         self.auth.ensure_sso()
         menu_init_url = f"{BASE_URL_JWGLXT}/jwglxt/kwgl/kscx_cxXsksxxIndex.html?gnmkdm=N358105&layout=default"
+        headers_base = {
+            "User-Agent": USER_AGENT_WEB,
+            "Referer": menu_init_url,
+            "Accept": "*/*",
+        }
+
+        # 步骤 1: 访问考试模块首页建立会话上下文
         try:
-            self.session.get(menu_init_url, headers={"User-Agent": USER_AGENT_WEB}, timeout=self.hncu_session.timeout)
+            self.session.get(menu_init_url, headers=headers_base, timeout=self.hncu_session.timeout)
         except requests.RequestException:
             pass
 
-        url = f"{BASE_URL_JWGLXT}/jwglxt/kwgl/kscx_cxXsksxxIndex.html?doType=query&gnmkdm=N358105"
+        term_val = Term.normalize(term)
 
-        term_val = term.value if isinstance(term, Term) else str(term)
+        # 步骤 2: 触发学年学期考务联动查询（还原官方 Web 链路）
+        common_url = f"{BASE_URL_JWGLXT}/jwglxt/ksglcommon/common_cxKsmcByXnxq.html?gnmkdm=N358105"
+        try:
+            self.session.post(
+                common_url,
+                data={"xnm": str(year), "xqm": term_val},
+                headers={
+                    **headers_base,
+                    "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                timeout=self.hncu_session.timeout,
+            )
+        except requests.RequestException:
+            pass
+
+        # 步骤 3: 正式执行考试日程与考场查询
+        url = f"{BASE_URL_JWGLXT}/jwglxt/kwgl/kscx_cxXsksxxIndex.html?doType=query&gnmkdm=N358105"
         post_data = {
             "xnm": str(year),
             "xqm": term_val,
@@ -54,17 +78,16 @@ class ExamsService:
             "ksrq": "",
             "kkbm_id": "",
             "_search": "false",
-            "nd": str(int(time.time())),
-            "queryModel.showCount": "50",
+            "nd": str(int(time.time() * 1000)),
+            "queryModel.showCount": "100",
             "queryModel.currentPage": "1",
-            "queryModel.sortName": "+",
+            "queryModel.sortName": "",
             "queryModel.sortOrder": "asc",
-            "time": "0",
+            "time": "1",
         }
 
         headers = {
-            "User-Agent": USER_AGENT_WEB,
-            "Referer": menu_init_url,
+            **headers_base,
             "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
             "X-Requested-With": "XMLHttpRequest",
         }

@@ -54,6 +54,12 @@ class GradeItem:
     term: str                 # 学期 (xqm)
     raw_data: Dict[str, Any] = field(default_factory=dict)
 
+    @property
+    def term_display(self) -> str:
+        """获取学期友好展示名称 (第 1 学期, 第 2 学期, 第 3 学期 (暑假实习))"""
+        from .constants import Term
+        return Term.get_display_name(self.term)
+
     @classmethod
     def from_dict(cls, d: Dict[str, Any]) -> "GradeItem":
         try:
@@ -114,16 +120,25 @@ class ExamItem:
     exam_room: str            # 考场地点 (cdmc)
     seat_number: str          # 座位号 (zwh)
     exam_type: str            # 考查形式 (ksfs)
+    exam_name: str = ""       # 考试轮次/名称 (ksmc)
+    credit: str = ""          # 学分 (xf)
+    campus: str = ""          # 校区 (cdxqmc)
     raw_data: Dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, d: Dict[str, Any]) -> "ExamItem":
+        seat = str(d.get("zwh") or d.get("zw") or "").strip()
+        if not seat or seat.lower() == "none":
+            seat = "-"
         return cls(
-            course_name=str(d.get("kcmc", "")),
-            exam_time=str(d.get("kssj", "")),
-            exam_room=str(d.get("cdmc", "")),
-            seat_number=str(d.get("zwh", "")),
-            exam_type=str(d.get("ksfs", "")),
+            course_name=str(d.get("kcmc", "")).strip(),
+            exam_time=str(d.get("kssj", "")).strip(),
+            exam_room=str(d.get("cdmc", "")).strip(),
+            seat_number=seat,
+            exam_type=str(d.get("ksfs", "")).strip(),
+            exam_name=str(d.get("ksmc", "")).strip(),
+            credit=str(d.get("xf", "")).strip(),
+            campus=str(d.get("cdxqmc", "")).strip(),
             raw_data=d
         )
 

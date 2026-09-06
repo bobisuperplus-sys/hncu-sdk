@@ -2,6 +2,7 @@
 HNCU SDK 常量与配置定义模块
 """
 from enum import Enum
+from typing import Any
 
 # 基础 URL
 BASE_URL_YDXY = "http://58.47.143.5"
@@ -48,7 +49,53 @@ NEWS_CATEGORY_PARAMS = {
 
 
 class Term(Enum):
-    """正方教务系统学期代码"""
-    FIRST = "3"       # 第一学期 (秋季学期)
-    SECOND = "12"     # 第二学期 (春季学期)
-    ALL = ""          # 全学年
+    """正方教务系统学期代码枚举与智能归一化"""
+    FIRST = "3"       # 第 1 学期 (上学期 / 秋季学期)
+    SECOND = "12"     # 第 2 学期 (下学期 / 春季学期)
+    THIRD = "16"      # 第 3 学期 (暑假实习 / 短学期)
+    ALL = ""          # 全学年全部学期
+
+    @classmethod
+    def normalize(cls, val: Any) -> str:
+        """
+        智能归一化学期输入参数，转化为正方教务系统底层的真实 xqm 代码。
+        支持入参：
+        - 第 1 学期: Term.FIRST, 1, "1", 3, "3", "上", "秋", "first" -> "3"
+        - 第 2 学期: Term.SECOND, 2, "2", 12, "12", "下", "春", "second" -> "12"
+        - 第 3 学期: Term.THIRD, 16, "16", "短", "暑", "实习", "third" -> "16"
+        - 全部学期: Term.ALL, None, "", 0, "0", "all", "全部" -> ""
+        """
+        if val is None:
+            return ""
+        if isinstance(val, Term):
+            return val.value
+        s = str(val).strip().lower()
+        if s in ("", "0", "all", "全部"):
+            return ""
+        if s in ("1", "first", "上", "秋"):
+            return cls.FIRST.value
+        if s in ("2", "12", "second", "下", "春"):
+            return cls.SECOND.value
+        if s in ("16", "third", "短", "暑", "实习", "暑假实习"):
+            return cls.THIRD.value
+        if s == "3":
+            # 正方教务系统原生代码 3 代表第 1 学期 (上学期)
+            return cls.FIRST.value
+        return s
+
+    @classmethod
+    def get_display_name(cls, val: Any) -> str:
+        """
+        获取学期的人性化展示名称 (如: 第 1 学期, 第 2 学期, 第 3 学期 (暑假实习))
+        """
+        xqm = cls.normalize(val)
+        if xqm == cls.FIRST.value:
+            return "第 1 学期"
+        elif xqm == cls.SECOND.value:
+            return "第 2 学期"
+        elif xqm == cls.THIRD.value:
+            return "第 3 学期 (暑假实习)"
+        elif not xqm:
+            return "全部学期"
+        return f"学期({xqm})"
+
