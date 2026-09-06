@@ -10,8 +10,6 @@
 
 ## 🖥️ 终端效果演示 (Terminal Demo)
 
-> 💡 **Anime.js `scrambleText` 风格赛博解码动效**：测试单元内置现代化终端字符随机乱码渐变解码流，全自动化双层认证与教务日程查询行云流水：
-
 <p align="center">
   <img src="assets/demo.gif" alt="HNCU SDK 终端字符解码与考试日程查询演示" width="880">
 </p>
@@ -208,25 +206,30 @@ python3 examples/test_news.py
 ```
 
 ### 2. 教务与移动端核心服务测试单元
-您可以通过配置环境变量 `HNCU_USER` 和 `HNCU_PASS` 直接运行（或直接运行脚本通过终端安全隐藏输入密码）：
+您可以通过配置环境变量 `HNCU_USER` 和 `HNCU_PASS` 直接运行（或直接运行脚本通过终端安全隐藏输入密码）；对于需要指定学年和学期的模块，可通过 `HNCU_YEAR` 与 `HNCU_TERM` 灵活控制：
 
 ```bash
+# 必填认证凭据
 export HNCU_USER="你的学号"
 export HNCU_PASS="你的密码"
+
+# 可选学年与学期参数（支持 1: 第1学期, 2: 第2学期, 3: 暑假实习/短学期，底层自动映射对应代码）
+export HNCU_YEAR="2024"       # 学年 (如 2023, 2024，不填则默认当前或全部)
+export HNCU_TERM="1"          # 学期 (1: 上学期, 2: 下学期, 3: 暑假实习)
 
 # 1. 认证单点登录测试
 python3 examples/test_auth.py
 
-# 2. 成绩查询测试
+# 2. 成绩查询测试 (支持 HNCU_YEAR / HNCU_TERM)
 python3 examples/test_grades.py
 
-# 3. 课表查询测试
+# 3. 课表查询测试 (支持 HNCU_YEAR / HNCU_TERM)
 python3 examples/test_schedule.py
 
-# 4. 考试日程测试
+# 4. 考试日程测试 (支持 HNCU_YEAR / HNCU_TERM)
 python3 examples/test_exams.py
 
-# 5. 空闲自习教室检索测试
+# 5. 空闲自习教室检索测试 (支持 HNCU_YEAR / HNCU_TERM)
 python3 examples/test_classrooms.py
 
 # 6. 学籍详细档案抓取测试

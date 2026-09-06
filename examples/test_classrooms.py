@@ -19,7 +19,7 @@ def main():
     client = get_authenticated_client(auto_sso=True)
 
     query_year = int(os.getenv("HNCU_YEAR", "2024"))
-    query_term = 1  # 传入直观学期数字 1 (第 1 学期 / 上学期)，SDK 自动映射为教务代码 3
+    query_term = int(os.getenv("HNCU_TERM", "1"))  # 传入直观学期数字 1 (第 1 学期 / 上学期)，SDK 自动映射为教务代码 3
     week = 1
     day_of_week = 1
     s_start = 1
