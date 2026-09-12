@@ -2,7 +2,7 @@
 正方教务系统 - 空闲教室/自习室查询服务
 """
 import time
-from typing import Union, List, Dict, Any
+from typing import Optional, Union, List, Dict, Any
 import requests
 
 from ..core.constants import BASE_URL_JWGLXT, USER_AGENT_WEB, Term
@@ -115,3 +115,85 @@ class ClassroomService:
 
         items = data.get("items", [])
         return [EmptyClassroomItem.from_dict(it) for it in items]
+
+    def query_study_rooms(
+        self,
+        period: str = "all_day",
+        building: str = "",
+        min_seats: int = 0,
+        room_name: str = "",
+        week: Optional[int] = None,
+        day_of_week: Optional[int] = None,
+        year: Optional[Union[int, str]] = None,
+        term: Optional[Union[Term, str]] = None,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> List[EmptyClassroomItem]:
+        """
+        【深度自习室 / 考研教室检索】
+        支持按常用自习时段预设、教学楼与最小座位数智能检索空闲自习教室。
+
+        :param period: 目标自习时段预设:
+                       - "all_day": 全天连续空闲 (1-10 节全空)
+                       - "morning": 上午空闲 (1-4 节)
+                       - "afternoon": 下午空闲 (5-8 节)
+                       - "evening": 晚自习空闲 (9-10 节)
+                       - "daytime": 白天连续空闲 (1-8 节)
+        :param building: 教学楼名称或编号 (如 "1教", "2教", "3教", 或留空查全校)
+        :param min_seats: 最低空闲座位数要求 (如过滤 60 座以上大自习室)
+        :param room_name: 教室名称模糊搜索 (如 "301", "阶梯")
+        :param week: 教学周次 (1-25 周，默认自动推算为第 1 周)
+        :param day_of_week: 星期几 (1: 周一 ... 7: 周日，默认取系统今日星期)
+        :param year: 学年 (默认 2026)
+        :param term: 学期 (默认第 1 学期)
+        :param page: 分页页码
+        :param page_size: 每页数量 (默认 50)
+        :return: EmptyClassroomItem 空闲自习教室列表
+        """
+        import datetime
+
+        # 1. 映射自习时段节次
+        period_map = {
+            "all_day": (1, 10),
+            "morning": (1, 4),
+            "afternoon": (5, 8),
+            "evening": (9, 10),
+            "daytime": (1, 8),
+        }
+        sec_start, sec_end = period_map.get(period.lower().strip(), (1, 10))
+
+        # 2. 智能推算当前星期几与周次
+        today = datetime.date.today()
+        target_dow = day_of_week if day_of_week is not None else today.isoweekday()
+        target_week = week if week is not None else 1
+        target_year = year if year is not None else 2026
+        target_term = term if term is not None else Term.FIRST
+
+        # 3. 基础教学楼名称映射兼容
+        target_building = building
+        if building in ("1", "1教", "一教"):
+            target_building = "1"
+        elif building in ("2", "2教", "二教"):
+            target_building = "2"
+        elif building in ("3", "3教", "三教"):
+            target_building = "3"
+
+        # 4. 执行多维查询
+        results = self.query(
+            year=target_year,
+            term=target_term,
+            week=target_week,
+            day_of_week=target_dow,
+            section_start=sec_start,
+            section_end=sec_end,
+            building=target_building,
+            room_name=room_name,
+            page=page,
+            page_size=page_size,
+        )
+
+        # 5. 过滤最低座位数要求
+        if min_seats > 0 and isinstance(results, list):
+            results = [r for r in results if r.seats >= min_seats]
+
+        return results

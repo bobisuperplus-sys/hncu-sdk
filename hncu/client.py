@@ -10,6 +10,8 @@ from .core.models import (
     AddressBookMember,
     CourseItem,
     EmptyClassroomItem,
+    EvaluationCourseItem,
+    EvaluationSummary,
     ExamItem,
     GradeItem,
     NewsItem,
@@ -23,6 +25,7 @@ from .jwglxt.schedule import ScheduleService
 from .jwglxt.exams import ExamsService
 from .jwglxt.classrooms import ClassroomService
 from .jwglxt.student import StudentService
+from .jwglxt.evaluation import EvaluationService
 from .mobile.address_book import AddressBookService
 from .mobile.user_info import UserInfoService
 from .mobile.calendar import CalendarService
@@ -71,6 +74,7 @@ class HncuClient:
         self.exams = ExamsService(self.hncu_session, self.auth)
         self.classrooms = ClassroomService(self.hncu_session, self.auth)
         self.student = StudentService(self.hncu_session, self.auth)
+        self.evaluation = EvaluationService(self.hncu_session, self.auth)
 
         # 4. 注入移动校园子服务
         self.address_book = AddressBookService(self.hncu_session, self.crypto, self.auth)
@@ -224,3 +228,57 @@ class HncuClient:
     def change_password(self, old_password: str, new_password: str) -> Dict[str, Any]:
         """修改统一身份认证/移动校园密码"""
         return self.account.change_password(old_password=old_password, new_password=new_password)
+
+    def get_evaluation_summary(self) -> EvaluationSummary:
+        """获取当前学期教学评价整体概况统计"""
+        return self.evaluation.get_summary()
+
+    def get_evaluable_courses(self, status: Optional[str] = None) -> List[EvaluationCourseItem]:
+        """获取当前学期所有可评价的教学班/课程列表"""
+        return self.evaluation.get_evaluable_courses(status=status)
+
+    def evaluate_course(
+        self,
+        course: EvaluationCourseItem,
+        comment: Optional[str] = None,
+        submit: bool = True,
+    ) -> Dict[str, Any]:
+        """对单门课程执行教学评价（全自动组装指标与评语）"""
+        return self.evaluation.evaluate_course(course=course, comment=comment, submit=submit)
+
+    def auto_evaluate_all(
+        self,
+        comment: Optional[str] = None,
+        submit: bool = True,
+        delay: float = 0.5,
+    ) -> Dict[str, Any]:
+        """一键全自动批量评教"""
+        return self.evaluation.auto_evaluate_all(comment=comment, submit=submit, delay=delay)
+
+    def query_study_rooms(
+        self,
+        period: str = "all_day",
+        building: str = "",
+        min_seats: int = 0,
+        room_name: str = "",
+        week: Optional[int] = None,
+        day_of_week: Optional[int] = None,
+        year: Optional[Union[int, str]] = None,
+        term: Optional[Union[Term, str]] = None,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> List[EmptyClassroomItem]:
+        """深度自习室 / 考研教室检索（按时段预设、教学楼与座位数智能检索）"""
+        return self.classrooms.query_study_rooms(
+            period=period,
+            building=building,
+            min_seats=min_seats,
+            room_name=room_name,
+            week=week,
+            day_of_week=day_of_week,
+            year=year,
+            term=term,
+            page=page,
+            page_size=page_size,
+        )
+

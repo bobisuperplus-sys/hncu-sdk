@@ -20,6 +20,8 @@ from .core.models import (
     AddressBookMember,
     CourseItem,
     EmptyClassroomItem,
+    EvaluationCourseItem,
+    EvaluationSummary,
     ExamItem,
     GradeItem,
     NewsItem,
@@ -33,6 +35,7 @@ from .jwglxt.schedule import ScheduleService
 from .jwglxt.exams import ExamsService
 from .jwglxt.classrooms import ClassroomService
 from .jwglxt.student import StudentService
+from .jwglxt.evaluation import EvaluationService
 from .mobile.address_book import AddressBookService
 from .mobile.user_info import UserInfoService
 from .mobile.calendar import CalendarService
@@ -41,7 +44,7 @@ from .account.account_service import AccountService
 from .portal.portal_service import PortalService
 from .portal.models import ECardInfo, PortalProfile
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 __author__ = "Yellowtown"
 
 __all__ = [
@@ -64,6 +67,8 @@ __all__ = [
     "NewsItem",
     "ECardInfo",
     "PortalProfile",
+    "EvaluationSummary",
+    "EvaluationCourseItem",
     # 异常体系
     "HncuException",
     "CryptoError",
@@ -79,6 +84,7 @@ __all__ = [
     "ExamsService",
     "ClassroomService",
     "StudentService",
+    "EvaluationService",
     "AddressBookService",
     "UserInfoService",
     "CalendarService",

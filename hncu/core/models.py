@@ -246,3 +246,89 @@ class EmptyClassroomItem:
             department=str(d.get("jgmc", "")),
             raw_data=d
         )
+
+
+@dataclass
+class EvaluationSummary:
+    """教学评价整体概况"""
+    saved_count: int                  # 保存门次 (bcgs)
+    submitted_count: int              # 提交门次 (tjgs)
+    unrated_count: int                # 未评门次 (wpgs)
+    prompt_message: str               # 评价提示信息 (pjtsxx)
+    raw_data: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def is_all_completed(self) -> bool:
+        """是否全部评价完成 (未评和保存均为 0)"""
+        return self.unrated_count == 0 and self.saved_count == 0
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> "EvaluationSummary":
+        def _to_int(val):
+            try:
+                return int(val)
+            except (ValueError, TypeError):
+                return 0
+
+        return cls(
+            saved_count=_to_int(d.get("bcgs", 0)),
+            submitted_count=_to_int(d.get("tjgs", 0)),
+            unrated_count=_to_int(d.get("wpgs", 0)),
+            prompt_message=str(d.get("pjtsxx", "")),
+            raw_data=d
+        )
+
+
+@dataclass
+class EvaluationCourseItem:
+    """可评价教学班/课程项"""
+    teaching_class_id: str            # 教学班ID (jxb_id)
+    course_id: str                    # 课程号ID (kch_id)
+    teacher_id: str                   # 教师工号ID (jgh_id)
+    teacher_name: str                 # 教师姓名 (jzgmc)
+    course_name: str                  # 课程名称 (kcmc)
+    teaching_class_name: str          # 教学班名称 (jxbmc)
+    period_code: str                  # 学时代码 (xsdm: "01" 理论, "03" 实践)
+    period_name: str                  # 学时名称 (xsmc)
+    status_code: str                  # 状态代码 (tjzt: "1" 已提交, "0" 已保存, "-1" 未评)
+    status_name: str                  # 状态名称 (tjztmc: 提交/保存/未评)
+    template_id: str                  # 评价模版ID (pjmbmcb_id)
+    is_grade_teacher: str             # 是否成绩录入教师 (sfcjlrjs)
+    department: str                   # 开课学院 (jgmc)
+    score: Optional[str]              # 最终评分 (bfzpf)
+    raw_data: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def is_submitted(self) -> bool:
+        """是否已经最终提交"""
+        return self.status_code == "1"
+
+    @property
+    def is_saved(self) -> bool:
+        """是否为暂存状态"""
+        return self.status_code == "0"
+
+    @property
+    def is_unrated(self) -> bool:
+        """是否为完全未评状态"""
+        return self.status_code == "-1"
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> "EvaluationCourseItem":
+        return cls(
+            teaching_class_id=str(d.get("jxb_id", "")),
+            course_id=str(d.get("kch_id", "")),
+            teacher_id=str(d.get("jgh_id", "")),
+            teacher_name=str(d.get("jzgmc", "")),
+            course_name=str(d.get("kcmc", "")).strip(),
+            teaching_class_name=str(d.get("jxbmc", "")).strip(),
+            period_code=str(d.get("xsdm", "01")),
+            period_name=str(d.get("xsmc", "理论")),
+            status_code=str(d.get("tjzt", "-1")),
+            status_name=str(d.get("tjztmc", "未评")),
+            template_id=str(d.get("pjmbmcb_id", "")),
+            is_grade_teacher=str(d.get("sfcjlrjs", "1")),
+            department=str(d.get("jgmc", "")),
+            score=str(d.get("bfzpf", "")) if d.get("bfzpf") else None,
+            raw_data=d
+        )
