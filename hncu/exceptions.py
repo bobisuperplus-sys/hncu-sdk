@@ -10,4 +10,5 @@ __all__ = [
     "SsoConnectError",
     "SessionExpiredError",
     "NetworkError",
+    "BusinessLogicError",
 ]

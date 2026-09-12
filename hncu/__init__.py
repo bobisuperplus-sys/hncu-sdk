@@ -14,6 +14,7 @@ from .core.exceptions import (
     NetworkError,
     SessionExpiredError,
     SsoConnectError,
+    BusinessLogicError,
 )
 from .core.models import (
     AddressBookMember,
@@ -37,8 +38,10 @@ from .mobile.user_info import UserInfoService
 from .mobile.calendar import CalendarService
 from .news.news_service import NewsService
 from .account.account_service import AccountService
+from .portal.portal_service import PortalService
+from .portal.models import ECardInfo, PortalProfile
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "Yellowtown"
 
 __all__ = [
@@ -59,6 +62,8 @@ __all__ = [
     "ExamItem",
     "AddressBookMember",
     "NewsItem",
+    "ECardInfo",
+    "PortalProfile",
     # 异常体系
     "HncuException",
     "CryptoError",
@@ -66,6 +71,7 @@ __all__ = [
     "SsoConnectError",
     "SessionExpiredError",
     "NetworkError",
+    "BusinessLogicError",
     # 独立子服务
     "AuthService",
     "GradesService",
@@ -78,4 +84,5 @@ __all__ = [
     "CalendarService",
     "NewsService",
     "AccountService",
+    "PortalService",
 ]

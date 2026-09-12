@@ -346,7 +346,7 @@ class AuthService:
         auth_jwt = self.hncu_session.get_cookie("Authorization", domain_pattern="ywpt.hncu.edu.cn")
         jsessionid = self.hncu_session.get_cookie("JSESSIONID")
 
-        return {
+        result = {
             "username": username,
             "ticket": ticket,
             "castgc": castgc,
@@ -355,4 +355,6 @@ class AuthService:
             "jsessionid": jsessionid,
             "final_url": final_url,
         }
+        self.web_auth_data = result
+        return result
 

@@ -33,3 +33,8 @@ class SessionExpiredError(HncuException):
 class NetworkError(HncuException):
     """网络超时或服务不可达异常"""
     pass
+
+
+class BusinessLogicError(HncuException):
+    """业务逻辑错误或响应数据异常"""
+    pass

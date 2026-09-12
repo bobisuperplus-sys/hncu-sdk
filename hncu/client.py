@@ -28,6 +28,8 @@ from .mobile.user_info import UserInfoService
 from .mobile.calendar import CalendarService
 from .news.news_service import NewsService
 from .account.account_service import AccountService
+from .portal.portal_service import PortalService
+from .portal.models import ECardInfo, PortalProfile
 
 
 class HncuClient:
@@ -78,6 +80,9 @@ class HncuClient:
         # 5. 注入公开资讯与账号安全子服务
         self.news_service = NewsService(self.hncu_session)
         self.account = AccountService(self.hncu_session, self.auth)
+
+        # 6. 注入智慧门户与一卡通子服务
+        self.portal = PortalService(self.hncu_session, self.auth)
 
     # =========================================================================
     # 状态属性
