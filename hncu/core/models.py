@@ -48,11 +48,25 @@ class GradeItem:
     credit: float             # 学分 (xf)
     course_nature: str        # 课程性质 (kcxzmc: 必修/选修/通识等)
     exam_nature: str          # 考试性质 (ksxz: 正常考试/补考/重修)
-    normal_score: str         # 平时成绩 (pscj)
-    final_score: str          # 期末成绩 (qmcj)
-    year: str                 # 学年 (xnm)
-    term: str                 # 学期 (xqm)
+    normal_score: str = ""    # 平时成绩 (pscj: 需教务处开放分项权限，HNCU 默认策略下为空)
+    final_score: str = ""     # 期末成绩 (qmcj: 需教务处开放分项权限，HNCU 默认策略下为空)
+    year: str = ""            # 学年 (xnm)
+    term: str = ""            # 学期 (xqm)
     raw_data: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def is_passed(self) -> bool:
+        """是否及格/通过（总成绩 >= 60 或等级评定非不及格）"""
+        try:
+            val = float(self.score)
+            return val >= 60.0
+        except (ValueError, TypeError):
+            return self.score.strip() not in ("不及格", "不合格", "缺考", "违纪", "作弊", "0", "")
+
+    @property
+    def is_makeup(self) -> bool:
+        """是否为补考或重修成绩"""
+        return "补考" in self.exam_nature or "重修" in self.exam_nature
 
     @property
     def term_display(self) -> str:
