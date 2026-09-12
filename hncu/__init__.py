@@ -5,7 +5,8 @@ HNCU Python SDK
 
 from .client import HncuClient
 from .core.constants import NewsCategory, Term
-from .core.crypto import HncuCrypto
+from .core.crypto import BarrettRSA, HncuCrypto
+
 from .core.exceptions import (
     CryptoError,
     HncuException,
@@ -37,7 +38,7 @@ from .mobile.calendar import CalendarService
 from .news.news_service import NewsService
 from .account.account_service import AccountService
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __author__ = "Yellowtown"
 
 __all__ = [
@@ -45,8 +46,10 @@ __all__ = [
     "HncuClient",
     "HncuSession",
     "HncuCrypto",
+    "BarrettRSA",
     "NewsCategory",
     "Term",
+
     # 数据模型
     "StudentProfile",
     "StudentDetail",

@@ -101,9 +101,29 @@ class HncuClient:
         """登录移动校园并（可选）自动打通正方教务系统单点登录"""
         return self.auth.login(user_id=user_id, password=password, auto_sso=auto_sso)
 
+    def send_web_sms(self, username: str) -> bool:
+        """发送统一身份认证平台 Web 端登录短信验证码"""
+        return self.auth.send_web_sms_code(username=username)
+
+    def login_web(
+        self,
+        username: str,
+        password: str,
+        sms_code: str,
+        service: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """通过 Web 统一身份认证平台 (CAS SSO) 使用账号、密码与短信验证码登录"""
+        return self.auth.login_web(
+            username=username,
+            password=password,
+            sms_code=sms_code,
+            service=service,
+        )
+
     def sso_connect(self) -> bool:
         """建立正方教务系统 CAS 单点登录免密会话"""
         return self.auth.sso_connect()
+
 
     def get_grades(
         self,

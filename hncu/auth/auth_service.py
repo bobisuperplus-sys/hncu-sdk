@@ -12,8 +12,10 @@ from ..core.constants import (
     BASE_URL_JWGLXT,
     BASE_URL_RZPT,
     BASE_URL_YDXY,
+    BASE_URL_YWPT,
     DEFAULT_ACCESS_TOKEN_HEADER,
     USER_AGENT_WEB,
+    WEB_AUTH_TAG,
 )
 from ..core.crypto import HncuCrypto
 from ..core.exceptions import (
@@ -201,3 +203,156 @@ class AuthService:
         self.ensure_app_login()
         if not self.is_sso_connected:
             self.sso_connect()
+
+    def send_web_sms_code(self, username: str) -> bool:
+        """
+        发送统一身份认证平台 Web 端登录短信验证码
+
+        :param username: 学号 / 工号 (例如: "2021000000")
+        :return: bool 是否成功触发短信下发
+        """
+        if not username:
+            raise LoginFailedError("用户名/学号不能为空")
+
+        ts = str(int(time.time() * 1000))
+        sign_token = self.crypto.rsa_encrypt(f"{WEB_AUTH_TAG}{ts}")
+
+        url = f"{BASE_URL_RZPT}/lyuapServer/login/mobile/generateCode"
+        headers = {
+            "Accept": "application/json, text/plain, */*",
+            "Content-Type": "application/json;charset=utf-8",
+            "X-Requested-With": "XMLHttpRequest",
+            "User-Agent": USER_AGENT_WEB,
+            "token": sign_token,
+            "loginUserToken": sign_token,
+        }
+        payload = {"username": username, "module": "2"}
+
+        try:
+            resp = self.session.post(
+                url,
+                json=payload,
+                headers=headers,
+                timeout=self.hncu_session.timeout,
+                verify=self.hncu_session.verify_ssl,
+            )
+            resp.raise_for_status()
+            res_json = resp.json()
+        except requests.RequestException as e:
+            raise NetworkError(f"发送验证码网络请求失败: {e}") from e
+        except json.JSONDecodeError as e:
+            raise LoginFailedError(f"服务端返回了非预期响应: {resp.text[:200]}") from e
+
+        meta = res_json.get("meta", {})
+        if not meta.get("success", False):
+            msg = meta.get("message", "发送短信验证码失败")
+            raise LoginFailedError(msg, code=meta.get("statusCode", -1))
+
+        return True
+
+    def login_web(
+        self,
+        username: str,
+        password: str,
+        sms_code: str,
+        service: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        通过 Web 统一身份认证平台 (CAS SSO) 使用账号、密码与短信验证码登录
+
+        :param username: 学号 / 工号
+        :param password: 明文密码
+        :param sms_code: 手机收到的 6 位短信验证码
+        :param service: 授权目标服务 URL (默认指向服务门户: http://ywpt.hncu.edu.cn:4106/shiro-cas)
+        :return: 认证凭据字典 (包含 ticket, castgc, authorization, jsessionid 等)
+        """
+        if not username or not password:
+            raise LoginFailedError("用户名或密码不能为空")
+        if not sms_code:
+            raise LoginFailedError("短信验证码不能为空")
+
+        target_service = service or f"{BASE_URL_YWPT}/shiro-cas"
+        encrypted_pwd = self.crypto.rsa_encrypt(password)
+
+        ticket_url = f"{BASE_URL_RZPT}/lyuapServer/v1/tickets"
+        headers = {
+            "User-Agent": USER_AGENT_WEB,
+            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+            "X-Requested-With": "XMLHttpRequest",
+        }
+        form_data = {
+            "username": username,
+            "password": encrypted_pwd,
+            "service": target_service,
+            "loginType": "",
+            "smsCode": sms_code.strip(),
+        }
+
+        try:
+            resp = self.session.post(
+                ticket_url,
+                data=form_data,
+                headers=headers,
+                timeout=self.hncu_session.timeout,
+                verify=self.hncu_session.verify_ssl,
+            )
+            resp.raise_for_status()
+            res_json = resp.json()
+        except requests.RequestException as e:
+            raise NetworkError(f"Web 登录认证请求失败: {e}") from e
+        except json.JSONDecodeError as e:
+            raise LoginFailedError(f"服务端返回了非预期响应: {resp.text[:200]}") from e
+
+        # 检测业务层返回错误
+        data_obj = res_json.get("data")
+        if isinstance(data_obj, dict) and data_obj.get("code"):
+            err_code = str(data_obj.get("code"))
+            err_map = {
+                "FALSE": "账号或密码错误，请检查",
+                "CODEFALSE": "短信验证码错误或已过期",
+                "PASSERROR": "密码错误",
+                "USERLOCK": "账号已被锁定，请稍后再试",
+                "NOUSER": "用户不存在",
+            }
+            msg = err_map.get(err_code, f"认证失败: {err_code}")
+            raise LoginFailedError(msg)
+
+        # 提取票据 (ticket 或 tgt)
+        ticket = res_json.get("ticket")
+        if not ticket and isinstance(data_obj, dict):
+            ticket = data_obj.get("ticket")
+        if not ticket:
+            ticket = res_json.get("tgt")
+
+        castgc = self.hncu_session.get_cookie("CASTGC", domain_pattern="rzpt.hncu.edu.cn")
+
+        # 携带 Ticket 访问 target_service 完成 CAS 验证与会话建立
+        final_url = None
+        if ticket:
+            sep = "&" if ("?" in target_service) else "?"
+            validate_url = f"{target_service}{sep}ticket={ticket}"
+            try:
+                resp_val = self.session.get(
+                    validate_url,
+                    headers={"User-Agent": USER_AGENT_WEB},
+                    allow_redirects=True,
+                    timeout=self.hncu_session.timeout,
+                    verify=self.hncu_session.verify_ssl,
+                )
+                final_url = resp_val.url
+            except requests.RequestException:
+                pass
+
+        auth_jwt = self.hncu_session.get_cookie("Authorization", domain_pattern="ywpt.hncu.edu.cn")
+        jsessionid = self.hncu_session.get_cookie("JSESSIONID")
+
+        return {
+            "username": username,
+            "ticket": ticket,
+            "castgc": castgc,
+            "service": target_service,
+            "authorization": auth_jwt,
+            "jsessionid": jsessionid,
+            "final_url": final_url,
+        }
+
