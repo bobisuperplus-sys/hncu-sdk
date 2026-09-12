@@ -60,25 +60,70 @@ pip install -r requirements.txt
 
 ---
 
-## 🚀 快速上手 (Quick Start)
+## 🔑 双轨登录认证方式说明 (Authentication Methods)
 
-### 1. 登录并查询历史成绩
+HNCU SDK 原生支持两种互为补充的登录机制，开发者可根据具体的业务场景与自动化需求灵活选择：
+
+| 登录方式 | 依赖凭据 | 是否需验证码 | 适用场景与支持功能 |
+| :--- | :--- | :---: | :--- |
+| **方式一：移动校园 App 端登录 (推荐)** | 纯账号 + 密码 | ❌ **免验证码** | **全自动无人值守脚本 / 定时任务 / 后台服务**<br>支持正方教务全套功能（成绩、课表、考试、全自动评教、自习室、学籍档案）、移动校园通讯录与校历等。 |
+| **方式二：Web 统一身份认证登录** | 账号 + 密码 + 短信验证码 | ✅ **需要短信验证码** | **智慧门户与一卡通数据查询**<br>通过 CAS SSO 获取官方 Web 凭证，支持一卡通实时余额与状态、个人综合档案及高清照片提取。 |
+
+---
+
+### 方式一：移动校园 App 端登录（免验证码，无人值守推荐）
+
+底层通过逆向移动校园移动端数据协议（内置 `AES-128-ECB` 加密载荷与设备唯一识别码），**仅需学号和密码即可全自动登录**；配合 `auto_sso=True` 可全自动建立 CAS SSO 会话打通正方教务系统：
+
+```python
+from hncu import HncuClient
+
+client = HncuClient()
+
+# 纯账密登录（自动打通正方教务免密单点登录）
+profile = client.login(user_id="你的学号", password="你的密码", auto_sso=True)
+
+print(f"登录成功: {profile.user_name} 同学 ({profile.class_name})")
+print(f"正方教务 SSO 连通状态: {'✅ 已连通' if client.is_sso_connected else '❌ 未连通'}")
+```
+
+### 方式二：Web 统一身份认证登录（CAS 短信验证码）
+
+基于学校统一身份认证平台 Web 端（`rzpt.hncu.edu.cn`）协议逆向，内置纯 Python 实现的 **Barrett RSA** 前端大数模幂加密引擎，自动获取 `execution` 令牌与短信验证码校验：
+
+```python
+from hncu import HncuClient
+
+client = HncuClient()
+
+# 1. 触发发送手机短信验证码
+client.send_web_sms(username="你的学号")
+sms_code = input("请输入手机收到的短信验证码: ")
+
+# 2. 提交认证（密码自动采用 Barrett RSA 大数加密）
+auth_res = client.login_web(
+    username="你的学号",
+    password="你的密码",
+    sms_code=sms_code,
+)
+print("Web 统一身份认证成功！已自动获取智慧门户与一卡通访问凭据")
+```
+
+---
+
+## 🚀 业务功能快速上手 (Quick Start)
+
+### 1. 查询历史成绩与绩点
 
 ```python
 from hncu import HncuClient, Term
 
-# 初始化客户端
 client = HncuClient()
+client.login(user_id="你的学号", password="你的密码")
 
-# 1. 登录（自动建立移动校园会话并打通正方教务系统单点登录）
-profile = client.login(user_id="你的学号", password="你的密码")
-
-print(f"欢迎你，{profile.user_name} 同学！")
-print(f"所属学院: {profile.department} | 班级: {profile.class_name}")
-
-# 2. 查询成绩 (默认查询全部，也可指定年份和学期)
+# 查询成绩 (默认查询全部，也可指定年份和学期)
 # 学期支持传入直觉数字: 1 (第1学期), 2 (第2学期), 3 (第3学期/暑假实习)，或使用 Term 枚举
-grades = client.get_grades(year=2023, term=1)
+grades = client.get_grades(year=2024, term=1)
 
 for g in grades:
     print(f"【{g.course_name}】({g.term_display}) 成绩: {g.score} | 绩点: {g.grade_point} | 学分: {g.credit}")
@@ -190,13 +235,13 @@ hncu_sdk/
 │   ├── core/                     # 底层公共核心模块
 │   │   ├── __init__.py
 │   │   ├── session.py            # HncuSession 统一会话管理（防代理劫持、Cookie安全获取）
-│   │   ├── crypto.py             # AES-128-ECB 与畸形控制字符清洗引擎
+│   │   ├── crypto.py             # AES-128-ECB、Barrett RSA 前端大数加密与畸形控制字符清洗引擎
 │   │   ├── constants.py          # 路由表、Header常量、枚举（Term, NewsCategory等）
 │   │   ├── exceptions.py         # 业务与网络异常定义体系
 │   │   └── models.py             # 全系统 Dataclass 强类型实体模型
 │   ├── auth/                     # 统一身份认证与单点登录模块
 │   │   ├── __init__.py
-│   │   └── auth_service.py       # 移动端 Token 认证与正方教务 CAS SSO 双层打通
+│   │   └── auth_service.py       # 移动端 Token 认证、Web 端短信验证码认证与正方教务 CAS SSO 打通
 │   ├── jwglxt/                   # 正方教务系统子服务（单文件单功能）
 │   │   ├── __init__.py
 │   │   ├── grades.py             # 成绩查询服务（历年全部考试、平时与期末拆解）
